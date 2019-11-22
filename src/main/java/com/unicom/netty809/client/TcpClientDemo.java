@@ -161,7 +161,7 @@ public class TcpClientDemo {
                 Message msg = buildSendVO(awsVo);
                 ChannelBuffer msgBuffer = buildMessage(msg);
                 channel.write(msgBuffer);
-                LOGGER.error("发送--" + awsVo.toString());
+                LOGGER.info("发送--" + awsVo.toString());
             } else {
                 LONGINSTATUS = "";
             }

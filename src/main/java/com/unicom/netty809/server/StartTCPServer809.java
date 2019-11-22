@@ -11,7 +11,7 @@ public class StartTCPServer809 {
 
 
     static {
-        TCPServer809 c1 = new TCPServer809(10905,"company1");
+        TCPServer809 c1 = new TCPServer809(10098,"company1");
         new Thread(c1).start();
     }
 }

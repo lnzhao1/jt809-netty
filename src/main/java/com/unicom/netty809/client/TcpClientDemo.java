@@ -44,14 +44,14 @@ public class TcpClientDemo {
     private static TcpClientDemo tcpClientDemo = new TcpClientDemo();
 
     //初始化channel,以便心跳机制及时登录
-    private Channel channel = tcpClient.getChannel("localhost", 1230);
+    private Channel channel = tcpClient.getChannel("127.0.0.1", 10098);
 
 
     public static TcpClientDemo getInstance() {
         //获取本机IP对应的用户名密码,IpUtils自己实现一个，就是获取本地IP的，因为有的城市的交委会给每个服务器一个账号密码
         String localIp = IpUtils.getLinuxLocalIp();
         if (StringUtils.isNotBlank(localIp)) {
-            String properties = "127.0.0.1";
+            String properties = "1:0:0:1";
             if (StringUtils.isNotBlank(localIp)) {
                 String[] pros = properties.split(":");
                 PLANT_CODE = Integer.parseInt(pros[0]);

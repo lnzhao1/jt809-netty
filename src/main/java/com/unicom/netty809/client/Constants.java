@@ -8,7 +8,7 @@ public class Constants {
 
     public final static int TCP_RESULT_PORT = 11111;
 
-    public final static String TCP_ADDRESS_FUJIAN = "";
+    public final static String TCP_ADDRESS_FUJIAN = "127.0.0.1";
 
-    public final static int TCP_PORT_FUJIAN = 11111;
+    public final static int TCP_PORT_FUJIAN = 10098;
 }

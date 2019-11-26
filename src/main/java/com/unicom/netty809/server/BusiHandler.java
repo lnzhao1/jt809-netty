@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -356,5 +357,19 @@ public class BusiHandler extends SimpleChannelHandler
         ChannelBuffer buffer = ChannelBuffers.buffer(0);
         msgRep.setMsgBody(buffer);
         ChannelFuture f = e.getChannel().write(msgRep);
+    }
+
+    /**
+     * 处理经纬度
+     * @param needFormat
+     * @return
+     */
+    private String formatLonLat(Long needFormat) {
+        Double firstNum =  (double)needFormat /1000000;
+        NumberFormat numFormat = NumberFormat.getInstance();
+        numFormat.setMaximumFractionDigits(6);
+        numFormat.setGroupingUsed(false);
+        String formatedValue = numFormat.format(firstNum);
+        return formatedValue;
     }
 }

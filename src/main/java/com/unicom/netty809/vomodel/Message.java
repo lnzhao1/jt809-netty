@@ -8,8 +8,8 @@ public class Message {
     public static final int MSG_HEAD = 0x5b;
     public static final int MSG_TAIL = 0x5d;
 
-    //报文中除数据体外，固定的数据长度
-    public static final int MSG_FIX_LENGTH = 26;
+    //报文中除数据体外，固定的数据长度(减去头尾)
+    public static final int MSG_FIX_LENGTH = 24;
 
     //报文序列号，自增。
     private static int internalMsgNo = 0;

@@ -98,51 +98,26 @@ public class TcpClientDemo {
             buffer.writeShort((short) Constants.TCP_RESULT_PORT);//2
             msg.setMsgBody(buffer);
             channel = tcpClient.getChannel(Constants.TCP_ADDRESS_FUJIAN, Constants.TCP_PORT_FUJIAN);
-            channel.write(buildMessage(msg));
+            channel.write(msg);
             LONGINSTATUS = LOGINING;
         }
         return success;
     }
 
-    public static ChannelBuffer buildMessage(Message msg) {
-        int bodyLength = 0;
-        if (null != msg.getMsgBody()) {
-            bodyLength = msg.getMsgBody().readableBytes();
-        }
-        msg.setMsgGesscenterId(PLANT_CODE);
-        ChannelBuffer buffer = ChannelBuffers.dynamicBuffer(bodyLength + Message.MSG_FIX_LENGTH);
-
-        ChannelBuffer headBuffer = ChannelBuffers.buffer(22);
-        //---数据头
-        headBuffer.writeInt(buffer.capacity() - 1);//4
-        headBuffer.writeInt(msg.getMsgSn());//4
-        headBuffer.writeShort((short) msg.getMsgId());//2
-        headBuffer.writeInt((int) msg.getMsgGesscenterId());//4
-        headBuffer.writeBytes(msg.getVersionFlag());//3
-        headBuffer.writeByte(0);//1
-        headBuffer.writeInt(10);//4
-        buffer.writeBytes(headBuffer);
-        //---数据体
-        if (null != msg.getMsgBody()) {
-            buffer.writeBytes(msg.getMsgBody());
-        }
-        ChannelBuffer finalBuffer = ChannelBuffers.copiedBuffer(buffer);
-        //--crc校验码
-        byte[] b = ChannelBuffers.buffer(finalBuffer.readableBytes()).array();
-        finalBuffer.getBytes(0, b);
-
-        int crcValue = Util.crc16(b);
-        finalBuffer.writeShort((short) crcValue);//2
-        //转义
-        byte[] bytes = ChannelBuffers.copiedBuffer(finalBuffer).array();
-        ChannelBuffer headFormatedBuffer = ChannelBuffers.dynamicBuffer(finalBuffer.readableBytes());
-        formatBuffer(bytes, headFormatedBuffer);
-        ChannelBuffer buffera = ChannelBuffers.buffer(headFormatedBuffer.readableBytes() + 2);
-        buffera.writeByte(Message.MSG_HEAD);
-        buffera.writeBytes(headFormatedBuffer);
-        buffera.writeByte(Message.MSG_TAIL);
-        return ChannelBuffers.copiedBuffer(buffera);
-    }
+//    public static Message buildMessage(Message msg) {
+//        int bodyLength = 0;
+//        if (null != msg.getMsgBody()) {
+//            bodyLength = msg.getMsgBody().capacity();
+//        }
+//        msg.setMsgGesscenterId(PLANT_CODE);
+//        ChannelBuffer buffer = ChannelBuffers.dynamicBuffer(bodyLength);
+//        //---数据体
+//        if (null != msg.getMsgBody()) {
+//            buffer.writeBytes(msg.getMsgBody());
+//        }
+//        msg.setMsgLength(bodyLength);
+//        return msg;
+//    }
 
 
     /**
@@ -159,8 +134,7 @@ public class TcpClientDemo {
             channel = tcpClient.getChannel(Constants.TCP_ADDRESS_FUJIAN, Constants.TCP_RESULT_PORT);
             if (null != channel && channel.isWritable()) {
                 Message msg = buildSendVO(awsVo);
-                ChannelBuffer msgBuffer = buildMessage(msg);
-                channel.write(msgBuffer);
+                channel.write(msg);
                 LOGGER.info("发送--" + awsVo.toString());
             } else {
                 LONGINSTATUS = "";
@@ -184,7 +158,11 @@ public class TcpClientDemo {
      */
     private Message buildSendVO(UpExgMsgRealLocationEntity awsVo) {
         Message msg = new Message(JT809Constants.UP_EXG_MSG);
-        ChannelBuffer buffer = ChannelBuffers.buffer(36);
+        ChannelBuffer buffer = ChannelBuffers.buffer( 64);//数据体总长
+        buffer.writeBytes(getBytesWithLengthAfter(21, awsVo.getVehicleNo().getBytes(Charset.forName("GBK"))));//21
+        buffer.writeByte(1);//1
+        buffer.writeShort(JT809Constants.UP_EXG_MSG_REAL_LOCATION);//2
+        buffer.writeInt(36);//4
         //是否加密
         buffer.writeByte((byte) 0);//0未加密 // 1
         //日月年dmyy
@@ -213,8 +191,8 @@ public class TcpClientDemo {
         //海拔
         buffer.writeShort((short) 0);//2
         //车辆状态
-        int accStatus = 0 == (int)awsVo.getAlarm() ? 0 : (int)awsVo.getAlarm();
-        int gpsStatus = 0 == (int)awsVo.getState() ? 0 : (int)awsVo.getState();
+        int accStatus = 0;
+        int gpsStatus = 0;
         if (accStatus == 0 && gpsStatus == 0) {
             buffer.writeInt(0);//4
         } else if (accStatus == 1 && gpsStatus == 0) {
@@ -225,58 +203,11 @@ public class TcpClientDemo {
             buffer.writeInt(3);//4
         }
         //报警状态
-        buffer.writeInt(0);//0表示正常；1表示报警//4
-        ChannelBuffer headBuffer = ChannelBuffers.buffer(buffer.capacity() + 28);
-        headBuffer.writeBytes(getBytesWithLengthAfter(21, awsVo.getVehicleNo().getBytes(Charset.forName("GBK"))));//21
-        headBuffer.writeByte(1);//1
-        headBuffer.writeShort(JT809Constants.UP_EXG_MSG_REAL_LOCATION);//2
-        headBuffer.writeInt(buffer.capacity());//4
-        headBuffer.writeBytes(buffer);
-        msg.setMsgBody(headBuffer);
-
+        buffer.writeInt(1);//0表示正常；1表示报警//4
+        msg.setMsgBody(buffer);
         return msg;
     }
 
-    /**
-     * 报文转义
-     * void
-     *
-     * @param bytes
-     * @param formatBuffer 2016年10月12日 by fox_mt
-     */
-    private static void formatBuffer(byte[] bytes, ChannelBuffer formatBuffer) {
-        for (byte b : bytes) {
-            switch (b) {
-                case 0x5b:
-                    byte[] formatByte0x5b = new byte[2];
-                    formatByte0x5b[0] = 0x5a;
-                    formatByte0x5b[1] = 0x01;
-                    formatBuffer.writeBytes(formatByte0x5b);
-                    break;
-                case 0x5a:
-                    byte[] formatByte0x5a = new byte[2];
-                    formatByte0x5a[0] = 0x5a;
-                    formatByte0x5a[1] = 0x02;
-                    formatBuffer.writeBytes(formatByte0x5a);
-                    break;
-                case 0x5d:
-                    byte[] formatByte0x5d = new byte[2];
-                    formatByte0x5d[0] = 0x5e;
-                    formatByte0x5d[1] = 0x01;
-                    formatBuffer.writeBytes(formatByte0x5d);
-                    break;
-                case 0x5e:
-                    byte[] formatByte0x5e = new byte[2];
-                    formatByte0x5e[0] = 0x5e;
-                    formatByte0x5e[1] = 0x02;
-                    formatBuffer.writeBytes(formatByte0x5e);
-                    break;
-                default:
-                    formatBuffer.writeByte(b);
-                    break;
-            }
-        }
-    }
 
     /**
      * 16进制字符串转换成byte数组

@@ -1,6 +1,7 @@
 package com.unicom.netty809.client;
 
 import com.unicom.netty809.common.Decoder;
+import com.unicom.netty809.common.Encoder;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -79,6 +80,7 @@ public class TcpClient809{
                     pipeline.addLast("timeout", new IdleStateHandler(new HashedWheelTimer(), 10, 60, 0));//设置空闲心跳机制
                     pipeline.addLast("heartbeat", new HeartBeatHandler());//心跳发送包处理handler
                     pipeline.addLast("decode", new Decoder(""));//解码
+                    pipeline.addLast("encoder", new Encoder());//解码
                     pipeline.addLast("cliBusiHandler", new CliBusiHandler());//反馈数据处理
                     return pipeline;
                 }

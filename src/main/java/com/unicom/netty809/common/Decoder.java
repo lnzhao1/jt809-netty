@@ -153,6 +153,11 @@ public class Decoder extends FrameDecoder{
         msg.setEncryptKey(content.readUnsignedInt());
         //数据体为变长字节 去掉校验码与尾标识的数据体
         ChannelBuffer bodyBytes = content.readBytes(content.readableBytes()-2-1);
+        //解密
+        if(msg.getEncryptFlag() == 1L){
+            byte[] dataByte =  encrypt('A','B','C',msg.getEncryptKey(),bodyBytes.array());
+            bodyBytes = ChannelBuffers.copiedBuffer(dataByte);
+        }
         msg.setMsgBody(bodyBytes);
         //校验码
         msg.setCrcCode(content.readUnsignedShort());
@@ -245,5 +250,26 @@ public class Decoder extends FrameDecoder{
             }
         }
       return   index;
+    }
+    //加密，解密 执行第一次加密 第二次变回原值解密
+    public static byte[] encrypt(int M1,int IA1,int IC1,long key,byte [] data) {
+        if(data == null) return null;
+        byte[] array = data;//使用原对象，返回原对象
+        //byte[] array = new byte[data.length]; //数组复制 返回新的对象
+        //System.arraycopy(data, 0, array, 0, data.length);
+        int idx=0;
+        if(key==0){
+            key=1;
+        }
+        int mkey = M1;
+        if (0 == mkey ) {
+            mkey = 1;
+        }
+        while(idx<array.length){
+            key = IA1 * ( key % mkey ) + IC1;
+            array[idx]^=((key>>20)&0xFF);
+            idx++;
+        }
+        return array;
     }
 }
